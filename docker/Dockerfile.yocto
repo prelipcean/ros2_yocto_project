@@ -1,0 +1,80 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set environment variables for the user and group
+ARG USERNAME=devuser
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+# Install Yocto and dev dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        sudo \
+        build-essential \
+        chrpath \
+        cpio \
+        debianutils \
+        diffstat \
+        file \
+        gawk \
+        gcc \
+        git \
+        iputils-ping \
+        libacl1 \
+        liblz4-tool \
+        locales \
+        make \
+        python3 \
+        python3-git \
+        python3-jinja2 \
+        python3-pexpect \
+        python3-pip \
+        python3-subunit \
+        python3-yaml \
+        python3-saneyaml \
+        python3-sphinx-rtd-theme \
+        sphinx \
+        socat \
+        texinfo \
+        unzip \
+        wget \
+        xz-utils \
+        zstd \
+        librsvg2-bin \
+        fonts-freefont-otf \
+        latexmk \
+        tex-gyre \
+        texlive-fonts-extra \
+        texlive-fonts-recommended \
+        texlive-lang-all \
+        texlive-latex-extra \
+        texlive-latex-recommended \
+        texlive-xetex \
+        curl \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set locale
+RUN locale-gen en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+# Create non-root user and workspace directory (empty for volume mapping)
+RUN groupadd --gid $USER_GID $USERNAME && \
+    useradd --uid $USER_UID --gid $USER_GID -m -s /bin/bash $USERNAME && \
+    mkdir -p /home/$USERNAME/workspace && \
+    chown $USERNAME:$USERNAME /home/$USERNAME/workspace && \
+    echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME && \
+    chmod 0440 /etc/sudoers.d/$USERNAME
+
+USER $USERNAME
+WORKDIR /home/$USERNAME/workspace
+
+# Install code-server globally
+RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+EXPOSE 8080
+
+CMD ["code-server", "--bind-addr", "0.0.0.0:8080", "--auth", "none"]
